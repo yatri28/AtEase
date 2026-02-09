@@ -3,13 +3,82 @@ import { useNavigate } from "react-router-dom";
 
 export default function Auth() {
   const [mode, setMode] = useState("login"); // login | signup
-  const [role, setRole] = useState("student"); // ✅ role state
+  const [loading, setLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "student",
+  });
+
   const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const url =
+      mode === "signup"
+        ? "http://localhost:5000/api/auth/signup"
+        : "http://localhost:5000/api/auth/login";
+
+    const payload =
+      mode === "signup"
+        ? form
+        : {
+            email: form.email,
+            password: form.password,
+          };
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Something went wrong");
+        setLoading(false);
+        return;
+      }
+
+      // LOGIN SUCCESS
+      if (mode === "login") {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        if (data.user.role === "student") navigate("/student");
+        if (data.user.role === "counselor") navigate("/counselor");
+        if (data.user.role === "admin") navigate("/admin");
+      }
+
+      // SIGNUP SUCCESS
+      if (mode === "signup") {
+        alert("Signup successful! Please login.");
+        setMode("login");
+        setForm({
+          name: "",
+          email: "",
+          password: "",
+          role: "student",
+        });
+      }
+    } catch (err) {
+      alert("Server error. Try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-        
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="mx-auto h-12 w-12 rounded-lg bg-teal-500 flex items-center justify-center text-white font-bold text-xl">
@@ -42,22 +111,17 @@ export default function Auth() {
         </div>
 
         {/* Form */}
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-
-            // ✅ role-based redirect
-            if (role === "student") navigate("/student");
-            if (role === "counselor") navigate("/counselor");
-            if (role === "admin") navigate("/admin");
-          }}
-        >
+        <form className="space-y-4" onSubmit={handleSubmit}>
           {mode === "signup" && (
             <input
               type="text"
               placeholder="Full Name"
               className="w-full px-4 py-2 border rounded-lg"
+              value={form.name}
+              onChange={(e) =>
+                setForm({ ...form, name: e.target.value })
+              }
+              required
             />
           )}
 
@@ -65,6 +129,10 @@ export default function Auth() {
             type="email"
             placeholder="Email"
             className="w-full px-4 py-2 border rounded-lg"
+            value={form.email}
+            onChange={(e) =>
+              setForm({ ...form, email: e.target.value })
+            }
             required
           />
 
@@ -72,25 +140,37 @@ export default function Auth() {
             type="password"
             placeholder="Password"
             className="w-full px-4 py-2 border rounded-lg"
+            value={form.password}
+            onChange={(e) =>
+              setForm({ ...form, password: e.target.value })
+            }
             required
           />
 
-          {/* ✅ ROLE DROPDOWN (LOGIN + SIGNUP) */}
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg"
-          >
-            <option value="student">Student</option>
-            <option value="counselor">Counselor</option>
-            <option value="admin">Admin</option>
-          </select>
+          {mode === "signup" && (
+            <select
+              className="w-full px-4 py-2 border rounded-lg"
+              value={form.role}
+              onChange={(e) =>
+                setForm({ ...form, role: e.target.value })
+              }
+            >
+              <option value="student">Student</option>
+              <option value="counselor">Counselor</option>
+              <option value="admin">Admin</option>
+            </select>
+          )}
 
           <button
             type="submit"
-            className="w-full bg-teal-500 text-white py-2 rounded-lg font-semibold hover:bg-teal-600"
+            disabled={loading}
+            className="w-full bg-teal-500 text-white py-2 rounded-lg font-semibold hover:bg-teal-600 disabled:opacity-50"
           >
-            {mode === "login" ? "Sign In" : "Create Account"}
+            {loading
+              ? "Please wait..."
+              : mode === "login"
+              ? "Sign In"
+              : "Create Account"}
           </button>
         </form>
 
