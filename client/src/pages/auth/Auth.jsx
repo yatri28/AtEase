@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Auth() {
-  const [mode, setMode] = useState("login"); // login | signup
+  const [mode, setMode] = useState("login"); 
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
