@@ -23,12 +23,14 @@ export default function Auth() {
         ? "http://localhost:5000/api/auth/signup"
         : "http://localhost:5000/api/auth/login";
 
+    // ✅ role is sent in BOTH signup and login
     const payload =
       mode === "signup"
         ? form
         : {
             email: form.email,
             password: form.password,
+            role: form.role,
           };
 
     try {
@@ -48,7 +50,7 @@ export default function Auth() {
         return;
       }
 
-      // LOGIN SUCCESS
+      // ✅ LOGIN SUCCESS
       if (mode === "login") {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
@@ -58,7 +60,7 @@ export default function Auth() {
         if (data.user.role === "admin") navigate("/admin");
       }
 
-      // SIGNUP SUCCESS
+      // ✅ SIGNUP SUCCESS
       if (mode === "signup") {
         alert("Signup successful! Please login.");
         setMode("login");
@@ -69,7 +71,7 @@ export default function Auth() {
           role: "student",
         });
       }
-    } catch (err) {
+    } catch (error) {
       alert("Server error. Try again later.");
     } finally {
       setLoading(false);
@@ -112,6 +114,7 @@ export default function Auth() {
 
         {/* Form */}
         <form className="space-y-4" onSubmit={handleSubmit}>
+          {/* Name (signup only) */}
           {mode === "signup" && (
             <input
               type="text"
@@ -125,6 +128,7 @@ export default function Auth() {
             />
           )}
 
+          {/* Email */}
           <input
             type="email"
             placeholder="Email"
@@ -136,6 +140,7 @@ export default function Auth() {
             required
           />
 
+          {/* Password */}
           <input
             type="password"
             placeholder="Password"
@@ -147,20 +152,20 @@ export default function Auth() {
             required
           />
 
-          {mode === "signup" && (
-            <select
-              className="w-full px-4 py-2 border rounded-lg"
-              value={form.role}
-              onChange={(e) =>
-                setForm({ ...form, role: e.target.value })
-              }
-            >
-              <option value="student">Student</option>
-              <option value="counselor">Counselor</option>
-              <option value="admin">Admin</option>
-            </select>
-          )}
+          {/* ✅ ROLE DROPDOWN (LOGIN + SIGNUP) */}
+          <select
+            className="w-full px-4 py-2 border rounded-lg"
+            value={form.role}
+            onChange={(e) =>
+              setForm({ ...form, role: e.target.value })
+            }
+          >
+            <option value="student">Student</option>
+            <option value="counselor">Counselor</option>
+            <option value="admin">Admin</option>
+          </select>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
