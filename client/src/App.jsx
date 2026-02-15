@@ -7,7 +7,6 @@ import Profile from "./pages/student/Profile";
 import Settings from "./pages/student/Settings";
 
 
-
 export default function App() {
   return (
     <BrowserRouter>

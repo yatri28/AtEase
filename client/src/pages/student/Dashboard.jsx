@@ -1,16 +1,26 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
 
 export default function StudentDashboard() {
-  const user = {
-    name: "Yatri",
-  };
+
+  // ✅ Get user from localStorage (from login)
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const user = storedUser || { name: "User" };
 
   const [selectedMood, setSelectedMood] = useState(null);
+  const navigate = useNavigate();
 
   const dayName = new Date().toLocaleDateString("en-US", {
     weekday: "long",
   });
+
+  // ✅ Dynamic Greeting
+  const hour = new Date().getHours();
+  let greeting = "Hello";
+  if (hour < 12) greeting = "Good morning";
+  else if (hour < 18) greeting = "Good afternoon";
+  else greeting = "Good evening";
 
   const moods = [
     { emoji: "😊", label: "Happy" },
@@ -22,6 +32,7 @@ export default function StudentDashboard() {
 
   return (
     <DashboardLayout role="student">
+
       {/* Motivational Line */}
       <p className="text-teal-500 text-sm font-medium mb-1">
         ✨ You are stronger than you think.
@@ -29,13 +40,14 @@ export default function StudentDashboard() {
 
       {/* Greeting */}
       <h1 className="text-2xl font-bold mb-1">
-        Good afternoon, {user.name} 👋
+        {greeting}, {user.name} 👋
       </h1>
+
       <p className="text-gray-500 mb-6">
         Here’s a quick look at your wellness journey
       </p>
 
-      {/* Stats */}
+      {/* Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="Next Session"
@@ -102,6 +114,7 @@ export default function StudentDashboard() {
 
       {/* Bottom Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
         {/* Upcoming Session */}
         <div className="bg-white p-6 rounded-2xl shadow-sm">
           <h2 className="font-semibold mb-2">Upcoming Session</h2>
@@ -109,9 +122,12 @@ export default function StudentDashboard() {
             You don’t have any sessions scheduled.
           </p>
 
-          <button className="mt-4 px-5 py-2 bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-600 transition">
-            Book a Session
-          </button>
+          <button
+  onClick={() => navigate("/student/book")}
+  className="mt-4 px-5 py-2 bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-600 transition"
+>
+  Book a Session
+</button>
         </div>
 
         {/* Quick Actions */}
@@ -119,11 +135,14 @@ export default function StudentDashboard() {
           <h2 className="font-semibold mb-3">Quick Actions</h2>
 
           <div className="space-y-3">
-            <ActionButton text="📅 Book a Session" />
-            <ActionButton text="💬 Message Counselor" />
+<ActionButton
+  text="📅 Book a Session"
+  onClick={() => navigate("/student/book")}
+/>            <ActionButton text="💬 Message Counselor" />
             <ActionButton text="📝 Write a Note" />
           </div>
         </div>
+
       </div>
     </DashboardLayout>
   );
@@ -146,11 +165,12 @@ function StatCard({ title, value, icon, color }) {
       </div>
     </div>
   );
-}
-
-function ActionButton({ text }) {
+}function ActionButton({ text, onClick }) {
   return (
-    <button className="w-full text-left px-4 py-3 border rounded-lg hover:bg-gray-50 transition">
+    <button
+      onClick={onClick}
+      className="w-full text-left px-4 py-3 border rounded-lg hover:bg-gray-50 transition"
+    >
       {text}
     </button>
   );
