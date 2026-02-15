@@ -1,30 +1,90 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
-
 import DashboardLayout from "../../layouts/DashboardLayout";
 
+
 export default function StudentDashboard() {
-  const [user, setUser] = useState(null);
-  const [selectedMood, setSelectedMood] = useState(null);
-  const [monthlyMoods, setMonthlyMoods] = useState([]);
-  const [todayMoodId, setTodayMoodId] = useState(null);
+const loggedUser = JSON.parse(localStorage.getItem("user") || "{}");
+const studentId = loggedUser?._id;
 
-  const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) setUser(JSON.parse(storedUser));
-    fetchMonthlyMoods();
-  }, []);
+const [selectedMood, setSelectedMood] = useState(null);
+const [showNoteBox, setShowNoteBox] = useState(false);
+const [noteText, setNoteText] = useState("");
+const [notes, setNotes] = useState([]);
+const [showAllNotes, setShowAllNotes] = useState(false);
+
+
+useEffect(() => {
+  if (!studentId) return;
+
+  const fetchNotes = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/notes/${studentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch notes");
+      }
+
+      const data = await response.json();
+      setNotes(data);   
+
+    } catch (error) {
+      console.log("Error fetching notes:", error);
+    }
+  };
+
+  fetchNotes();
+}, [studentId]);
+
+
+
+
+  // 🔹 Handle note submission
+const handleSubmitNote = async () => {
+  if (!noteText.trim()) {
+    alert("Please write something before submitting.");
+    return;
+  }
+
+  try {
+    console.log("Student ID:", studentId);
+console.log("Logged User:", loggedUser);
+
+    const response = await fetch("http://localhost:5000/api/notes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({
+        studentId,
+        text: noteText,
+      }),
+    });
+
+    const data = await response.json();
+    console.log("Server response:", data);
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to save");
+    }
+
+    setNotes((prev) => [data, ...prev]);
+    setNoteText("");
+    setShowNoteBox(false);
+
+  } catch (error) {
+    console.error("Save error:", error);
+    alert("Error saving note");
+  }
+};
 
   const dayName = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -147,7 +207,7 @@ export default function StudentDashboard() {
 
       {/* Greeting */}
       <h1 className="text-2xl font-bold mb-1">
-        Hello, {user?.name || "User"} 👋
+Good afternoon, {loggedUser?.name} 👋
       </h1>
 
       <p className="text-gray-500 mb-6">
@@ -174,12 +234,13 @@ export default function StudentDashboard() {
           icon="📈"
           color="bg-yellow-100"
         />
-        <StatCard
+       <StatCard
           title="Notes Sent"
-          value="0"
+          value={notes.length}
           icon="💬"
           color="bg-blue-100"
         />
+
       </div>
 
       {/* Mood Tracker */}
@@ -285,10 +346,77 @@ export default function StudentDashboard() {
           <div className="space-y-3">
             <ActionButton text="📅 Book a Session" />
             <ActionButton text="💬 Message Counselor" />
-            <ActionButton text="📝 Write a Note" />
+            <ActionButton text="📝 Write a Note" onClick={() => setShowNoteBox(true)}
+/>
+
           </div>
         </div>
       </div>
+
+      {/* Write Note Section */}
+{showNoteBox && (
+  <div className="bg-white p-6 rounded-2xl shadow-sm mt-6">
+    <h2 className="font-semibold mb-2">Write a Note</h2>
+    <p className="text-sm text-gray-500 mb-3">
+      You can share anything you feel comfortable with.
+    </p>
+
+    <textarea
+      rows="4"
+      className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-teal-400"
+      placeholder="Write your thoughts here..."
+      value={noteText}
+      onChange={(e) => setNoteText(e.target.value)}
+    />
+
+    <div className="flex gap-3 mt-4">
+      <button
+        onClick={handleSubmitNote}
+       disabled={!noteText.trim()}
+       className={`px-5 py-2 rounded-lg text-white transition ${
+       noteText.trim() ? "bg-teal-500 hover:bg-teal-600" : "bg-gray-300 cursor-not-allowed" }`}
+      >
+  Submit
+</button>
+
+
+      <button
+        onClick={() => setShowNoteBox(false)}
+        className="px-5 py-2 border rounded-lg hover:bg-gray-50 transition"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+
+{notes.length > 0 && (
+  <div className="bg-white p-6 rounded-2xl shadow-sm mt-6">
+    <h2 className="font-semibold mb-3">📝 Your Notes</h2>
+
+    {(showAllNotes ? notes : notes.slice(0, 2)).map((note) => (
+      <div
+        key={note._id}
+        className="border-b last:border-none py-2 text-gray-700"
+      >
+        • {note.text}
+      </div>
+    ))}
+
+    {notes.length > 2 && (
+      <button
+        onClick={() => setShowAllNotes(!showAllNotes)}
+        className="mt-3 text-teal-500 text-sm font-medium hover:underline"
+      >
+        {showAllNotes ? "Show less" : "View all notes"}
+      </button>
+    )}
+  </div>
+)}
+
+
+
+
     </DashboardLayout>
   );
 }
@@ -312,10 +440,14 @@ function StatCard({ title, value, icon, color }) {
   );
 }
 
-function ActionButton({ text }) {
+function ActionButton({ text , onClick}) {
   return (
-    <button className="w-full text-left px-4 py-3 border rounded-lg hover:bg-gray-50 transition">
+    <button
+      onClick={onClick}
+      className="w-full text-left px-4 py-3 border rounded-lg hover:bg-gray-50 transition">
       {text}
-    </button>
+</button>
+
+    
   );
 }
