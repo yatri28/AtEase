@@ -1,6 +1,8 @@
 import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 export default function Sidebar({ role }) {
+
   const menus = {
     student: [
       { name: "Dashboard", path: "/student", icon: "🏠" },
@@ -22,6 +24,15 @@ export default function Sidebar({ role }) {
     ],
   };
 
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
   return (
     <aside className="w-64 min-h-screen bg-slate-900 text-white flex flex-col">
       
@@ -36,17 +47,22 @@ export default function Sidebar({ role }) {
       {/* User */}
       <div className="px-6 py-4 flex items-center gap-3">
         <div className="h-10 w-10 rounded-full bg-teal-500 flex items-center justify-center font-semibold">
-          Y
+          {user?.name?.charAt(0).toUpperCase() || "U"}
         </div>
+
         <div>
-          <p className="text-sm font-medium">Yatri</p>
-          <p className="text-xs text-gray-400 capitalize">{role}</p>
+          <p className="text-sm font-medium">
+            {user?.name || "Loading..."}
+          </p>
+          <p className="text-xs text-gray-400 capitalize">
+            {role}
+          </p>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-4 mt-4 space-y-1">
-        {menus[role].map((item) => (
+        {menus[role]?.map((item) => (
           <NavLink
             key={item.name}
             to={item.path}
